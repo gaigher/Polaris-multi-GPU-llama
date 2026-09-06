@@ -1,0 +1,26 @@
+# Sorties de compilation (clone TheTom à part)
+llama-cpp-turboquant/
+build/
+*.exe
+*.dll
+*.pdb
+
+# Modèles
+*.gguf
+*.gguf2
+
+# Journaux et artefacts de test locaux
+logs/
+*.log
+*.out.log
+*.err.log
+
+# Archives / binaires précompilés
+*.zip
+atomic-llama-turboquant/
+
+# OS / éditeur
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
