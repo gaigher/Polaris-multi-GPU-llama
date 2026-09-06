@@ -24,7 +24,7 @@ Le fichier `Q4_K_M` est réparti en deux fichiers GGUF. **Les deux fichiers sont
 
 ## Télécharger le modèle
 
-Le modèle GGUF est disponible dans le dépôt Unsloth : [unsloth/gpt-oss-120b-GGUF](https://huggingface.co/unsloth/gpt-oss-120b-GGUF).
+Le modèle GGUF est disponible dans le dépôt Unsloth : [unsloth/gpt-oss-120b-GGUF/Q4_K_M](https://huggingface.co/unsloth/gpt-oss-120b-GGUF/tree/main/Q4_K_M).
 
 Pour le premier test, utiliser **Q4_K_M**. Les fichiers doivent rester dans le même répertoire :
 
