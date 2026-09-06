@@ -25,6 +25,12 @@ Les commandes ci-dessous s’exécutent **depuis la racine de ce clone**.
 
 Chat API validé (`/v1/chat/completions`).
 
+## Expérimental : GPT-OSS 120B
+
+Scénario **MoE** (experts sur CPU via `-ot`) sur les mêmes 6× Polaris — **non validé** comme le 70B.
+
+Détails, téléchargement Unsloth et commande de lancement : [docs/GPT-OSS_120B.md](docs/GPT-OSS_120B.md).
+
 ## Prérequis
 
 - 6 cartes Polaris 8 Go (testé : 1× RX 570 + 5× RX 580)
@@ -154,4 +160,4 @@ llama_kv_cache: size = 2906.25 MiB ( 25600 cells,  80 layers,  1/1 seqs), K (q8_
 
 MIT — voir [LICENSE](LICENSE) (texte anglais). Compatible avec llama.cpp / TheTom (MIT).
 
-Les poids Llama 3.3 restent sous la licence Meta ; ils ne font pas partie de ce dépôt.
+Les poids Llama 3.3 et GPT-OSS restent sous leurs licences respectives ; ils ne font pas partie de ce dépôt.
