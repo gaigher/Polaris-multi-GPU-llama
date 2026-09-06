@@ -8,6 +8,8 @@ Runbook et scripts pour **Llama 3.3 70B Q4** sur **6 GPU AMD GCN Polaris** (Wind
 
 Setup validé : **70B multi-GPU** sur 6× 8 Go (2026-08-31).
 
+![Plateforme 6× Polaris — Sapphire RX 580 / RX 570, risers PCIe, tour hôte](image/Plateforme.jpg)
+
 ## Ce dépôt
 
 ```powershell
