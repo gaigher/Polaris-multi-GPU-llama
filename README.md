@@ -29,7 +29,7 @@ Chat API validé (`/v1/chat/completions`).
 
 ## Expérimental : GPT-OSS 120B
 
-Scénario **MoE** (experts sur CPU via `-ot`) sur les mêmes 6× Polaris — **non validé** comme le 70B.
+Scénario **MoE** (couches d’experts partielles GPU + `--moe-cache`) sur les mêmes 6× Polaris — **non validé** comme le 70B. Aide au placement : `scripts/placer_experts_incremental.ps1` (**expérimental**).
 
 Détails, téléchargement Unsloth et commande de lancement : [docs/GPT-OSS_120B.md](docs/GPT-OSS_120B.md).
 
