@@ -29,9 +29,12 @@ Chat API validé (`/v1/chat/completions`).
 
 ## Expérimental : GPT-OSS 120B
 
-Scénario **MoE** (couches d’experts partielles GPU + `--moe-cache`) sur les mêmes 6× Polaris — **non validé** comme le 70B. Aide au placement : `scripts/placer_experts_incremental.ps1` (**expérimental**).
+Scénario **MoE** (placement `-ot` partiel GPU + experts CPU) sur les mêmes 6× Polaris — **non validé** comme le 70B.
 
-Détails, téléchargement Unsloth et commande de lancement : [docs/GPT-OSS_120B.md](docs/GPT-OSS_120B.md).
+- Réf. expérimentale : **S-23** + `-t 8` + **`--moe-cache off`** (Polaris 8 Go : `512` alloue après patch mais ~9× plus lent)
+- Runbook : [docs/GPT-OSS_120B.md](docs/GPT-OSS_120B.md)
+- Correctness moe-cache Vulkan (faux UMA) : [docs/PR_MOE_CACHE_VULKAN.md](docs/PR_MOE_CACHE_VULKAN.md) → upstream [PR #401](https://github.com/TheTom/llama-cpp-turboquant/pull/401)
+- Placement incrémental : `scripts/placer_experts_incremental.ps1` (**expérimental**, sans `-MoeCache` en prod)
 
 ## Prérequis
 
