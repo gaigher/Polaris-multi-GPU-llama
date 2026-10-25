@@ -139,7 +139,7 @@ Sur Polaris, sans ce patch, `turbo3` provoque un `GGML_ASSERT` (subgroup 32 vs w
 
 - Patch, build et détails : [docs/TurboQuant_POLARIS.md](docs/TurboQuant_POLARIS.md)
 - Lancement avec TurboQuant : `.\scripts\lancer_70b_6gpu.ps1 -TurboQuant`
-- Contribution upstream (subgroup) : [docs/Plan Optimiser MoE.md — § C.9](docs/Plan%20Optimiser%20MoE.md)
+- Contribution upstream (subgroup) : [docs/Plan Optimiser MoE.md — § C.9](docs/Plan%20Optimiser%20MoE.md#c9-pr-voisine--subgroup-set_rows-wave64)
 
 Exemple (après patch + build TheTom) :
 
