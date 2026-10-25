@@ -33,7 +33,7 @@ Scénario **MoE** (placement `-ot` partiel GPU + experts CPU) sur les mêmes 6×
 
 - Réf. expérimentale : **S-23** + `-t 8` + **`--moe-cache off`** (Polaris 8 Go : `512` alloue après patch mais ~9× plus lent)
 - Runbook : [docs/GPT-OSS_120B.md](docs/GPT-OSS_120B.md)
-- Correctness moe-cache Vulkan (faux UMA) : [docs/PR_MOE_CACHE_VULKAN.md](docs/PR_MOE_CACHE_VULKAN.md) → upstream [PR #401](https://github.com/TheTom/llama-cpp-turboquant/pull/401)
+- Optimisations MoE + PR cache Vulkan : [docs/Plan Optimiser MoE.md](docs/Plan%20Optimiser%20MoE.md) → upstream [PR #401](https://github.com/TheTom/llama-cpp-turboquant/pull/401)
 - Placement incrémental : `scripts/placer_experts_incremental.ps1` (**expérimental**, sans `-MoeCache` en prod)
 
 ## Prérequis
@@ -139,7 +139,7 @@ Sur Polaris, sans ce patch, `turbo3` provoque un `GGML_ASSERT` (subgroup 32 vs w
 
 - Patch, build et détails : [docs/TurboQuant_POLARIS.md](docs/TurboQuant_POLARIS.md)
 - Lancement avec TurboQuant : `.\scripts\lancer_70b_6gpu.ps1 -TurboQuant`
-- Contribution upstream : [docs/PR_UPSTREAM.md](docs/PR_UPSTREAM.md)
+- Contribution upstream (subgroup) : [docs/Plan Optimiser MoE.md — § C.9](docs/Plan%20Optimiser%20MoE.md)
 
 Exemple (après patch + build TheTom) :
 
