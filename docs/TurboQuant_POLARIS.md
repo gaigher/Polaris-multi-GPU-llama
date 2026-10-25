@@ -97,7 +97,7 @@ Pour une PR upstream, extraire les hunks **séparément** depuis `patches/polari
 - `ggml-vulkan.cpp` — subgroup seul (recommandé pour la PR)
 - `CMakeLists.txt` Vulkan — CMake Windows (optionnel, commit séparé)
 
-Détail coller PR : [Plan Optimiser MoE.md — § C.9](Plan%20Optimiser%20MoE.md).
+Contexte PR subgroup : [Plan Optimiser MoE.md — § C.9](Plan%20Optimiser%20MoE.md#c9-pr-voisine--subgroup-set_rows-wave64).
 
 ## Note CMake (Windows)
 
@@ -120,7 +120,7 @@ Mesures et lancement multi-GPU : [README](../README.md).
 
 ## Contribution upstream
 
-Ouvrez une PR sur **TheTom/llama-cpp-turboquant** avec le hunk subgroup de `patches/polaris-subgroup.patch` si possible. Voir [Plan Optimiser MoE.md — § C.9](Plan%20Optimiser%20MoE.md) et l’issue [#330](https://github.com/TheTom/llama-cpp-turboquant/issues/330).
+Ouvrez une PR sur **TheTom/llama-cpp-turboquant** avec le hunk subgroup de `patches/polaris-subgroup.patch` si possible. Voir [Plan Optimiser MoE.md — § C.9](Plan%20Optimiser%20MoE.md#c9-pr-voisine--subgroup-set_rows-wave64), la PR [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406) et l’issue [#330](https://github.com/TheTom/llama-cpp-turboquant/issues/330).
 
 ## Références
 
