@@ -36,13 +36,13 @@ Backend      : Vulkan
 | KV @ 32k   | ~548 MiB                            |
 
 
-**Résultat expérimental principal** (placement A historique, ctx 8192, sans TurboQuant) :
+**Résultat expérimental principal** (ctx 8192, sans TurboQuant ; gains dus au **placement** `-ot`, pas au moe-cache) :
 
 
-| Baseline                               | → Config incrémentale                             | Gain       |
-| -------------------------------------- | ------------------------------------------------- | ---------- |
-| Tous experts CPU : **~1,40 tok/s** gen | **3+4+4+4+4+4** + moe-cache : **~3,03 tok/s** gen | **≈ ×2,2** |
-| ~0,51 tok/s prompt                     | ~1,55 tok/s prompt                                | **≈ ×3**   |
+| Baseline                               | → Config S-23 (`3+4+4+4+4+4`, `-t 8`, `--moe-cache off`) | Gain       |
+| -------------------------------------- | -------------------------------------------------------- | ---------- |
+| Tous experts CPU : **~1,40 tok/s** gen | **~3,94 tok/s** gen                                      | **≈ ×2,8** |
+| ~0,51 tok/s prompt                     | **~3,14 tok/s** prompt                                   | **≈ ×6**   |
 
 
 Détail benches placement / cache / threads : [Plan Optimiser MoE.md](Plan%20Optimiser%20MoE.md).
@@ -55,7 +55,7 @@ Détail benches placement / cache / threads : [Plan Optimiser MoE.md](Plan%20Opt
 | Modèle         | GPT-OSS 120B                                                     |
 | Architecture   | MoE — 36 couches, **128 experts / couche**, top-4 actifs / token |
 | Quantification | Q4_K_M (Unsloth)                                                 |
-| Taille du GGUF | ~62,8 Go (2 shards)                                              |
+| Taille du GGUF | ~62,8 Go (2 shards ; ~58 Go de poids utiles hors overhead)       |
 | Paramètres     | ~117 B total / ~**5,1 B actifs** par token                       |
 | GPU            | 6× AMD Polaris 8 Go (48 Go VRAM)                                 |
 | RAM système    | 128 Go                                                           |
@@ -75,7 +75,7 @@ Les deux shards **doivent** rester dans le même dossier. Point d’entrée = `0
 
 ## Télécharger le modèle
 
-Dépôt : [unsloth/gpt-oss-120b-GGUF](https://huggingface.co/unsloth/gpt-oss-120b-GGUF). Licence Apache-2.0. Copie locale recommandée : SSD `F:\Models\…` (`scripts\copier_gguf_vers_F.cmd`).
+Dépôt : [unsloth/gpt-oss-120b-GGUF](https://huggingface.co/unsloth/gpt-oss-120b-GGUF). Licence Apache-2.0. Copie locale recommandée : SSD dédié (ex. `F:\Models\…`).
 
 ## Placement S-23 (rappel)
 
@@ -193,7 +193,7 @@ Progression ctx (TQ, 2026-09-12) : `8192 → 16384 → 25600 → 32768` OK.
 | VRAM        | Quasi pleine sur les 6 cartes | Partielle + RAM (+ cache MoE si un jour) |
 | Placement   | Dense layer-split             | **23 experts GPU (S)** + 13 CPU          |
 | ctx typique | 25600                         | **32768** (TQ) / 8192 sans TQ            |
-| Gen typique | (voir README 70B)             | ~3,94 @ 8k / ~3,53 @ 32k TQ (S, `-t 8`)  |
+| Gen typique | non benché ici (runbook charge/ctx) | ~3,94 @ 8k / ~3,53 @ 32k TQ (S, `-t 8`)  |
 
 
 

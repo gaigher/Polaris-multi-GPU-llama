@@ -56,7 +56,7 @@ Hits ≈ 49 %, pool ≈ 508 MiB — un bon hit rate ne suffit pas.
 
 ## 3. Pourquoi tout ne tient pas en VRAM
 
-~58 Go de poids pour **48 Go** VRAM. Chaque couche d’experts ≈ **1,6 Go** → plafond réaliste **~2–4 couches / carte** (souvent **4**, **3** sur Vulkan0 pour marge compute).
+GGUF ~**62,8 Go** (~**58 Go** de poids utiles) pour **48 Go** VRAM. Chaque couche d’experts ≈ **1,6 Go** → plafond réaliste **~2–4 couches / carte** (souvent **4**, **3** sur Vulkan0 pour marge compute).
 
 | Config testée | Résultat |
 | ------------- | -------- |
@@ -109,8 +109,6 @@ Script d’exploration (reload à chaque tour) : `scripts/placer_experts_increme
 
 ## A.2 Moins de couches pour « laisser de la place au cache » — infirmé
 
-Script : `scripts/bench_moe_cache_abc.ps1`.
-
 #### ctx 8192 (sans TQ)
 
 | Profil | Motif | Couches | Prompt* | Gen* |
@@ -131,6 +129,8 @@ Script : `scripts/bench_moe_cache_abc.ps1`.
 Pas de gain gen reproductible en retirant une couche.
 
 ## A.3 Position des couches (même total 23)
+
+Mesures **sans** `-t 8` (défaut serveur). Le sweep threads est en A.4 ; la prod retient **`-t 8`** (~3,94 / ~3,53).
 
 | Placement | Ctx | Prompt avg | Gen avg | vs A gen |
 | --------- | --- | ---------- | ------- | -------- |
@@ -185,8 +185,6 @@ Overrides utiles pour diag / force :
 | staging | **~88 GiB** H→D, sync dominante | coût principal |
 | `on` / `auto` (post-garde) | refuse staging, gen ≈ `off` | **défaut sûr** |
 
-Scripts de repro : `scripts/probe_moe_cache_alloc.ps1`, `scripts/bench_moe_cache_t0_matrix.ps1`, `scripts/bench_moe_cache_abc.ps1`.
-
 ## B.3 HOT_USES (admission / éviction)
 
 Sur Polaris 8 Go, les politiques d’admission (`admit_after`) et d’éviction « chaude » **n’ont pas battu** :
@@ -194,7 +192,7 @@ Sur Polaris 8 Go, les politiques d’admission (`admit_after`) et d’éviction 
 - `off` (~3,9 tok/s gen), ni
 - le garde thrash seul (~3,57 tok/s gen, encore sous `off`).
 
-Warm-up staging ~2,5 GiB puis garde thrash. **Prod = `off`.** Script de matrice : `scripts/bench_moe_hot_uses_admit_matrix.ps1`.
+Warm-up staging ~2,5 GiB puis garde thrash. **Prod = `off`.**
 
 ## B.4 Profils
 
@@ -225,7 +223,7 @@ Correctness : host-mapped seulement si le tas UMA peut tenir le budget ; sinon d
 | Log « slow on discrete » + garde `on`/`auto` | Dans le follow-up PR |
 | Merge upstream | En revue |
 
-**Hors scope #401 :** subgroup SET_ROWS → § [C.9](#c9-pr-voisine--subgroup-set_rows-wave64) / [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406).
+**Hors scope #401 :** subgroup SET_ROWS → § [C.4](#c4-pr-voisine--subgroup-set_rows-wave64) / [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406).
 
 ## C.2 Log attendu (chemin aperture)
 
@@ -243,7 +241,7 @@ Correctness : host-mapped seulement si le tas UMA peut tenir le budget ; sinon d
 | `512` ≈ `off` | PR correctness ; pas de claim perf |
 | `512` ≪ `off` (**cas réel Polaris**) | Correctness quand même ; documenter thrash ; prod = `off` |
 
-## C.9 PR voisine — subgroup SET_ROWS (wave64)
+## C.4 PR voisine — subgroup SET_ROWS (wave64)
 
 Sur Polaris, sans correctif, `turbo3` peut assert (subgroup 32 vs wave64).
 
@@ -287,7 +285,7 @@ Sur Polaris, sans correctif, `turbo3` peut assert (subgroup 32 vs wave64).
 | ------- | ---- |
 | PR cache | [#401](https://github.com/TheTom/llama-cpp-turboquant/pull/401) |
 | Compare base ← patch | [feature/turboquant-kv-cache…gaigher:patch-1](https://github.com/TheTom/llama-cpp-turboquant/compare/feature/turboquant-kv-cache...gaigher:patch-1?expand=1) |
-| Subgroup SET_ROWS | § C.9 / [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406) |
+| Subgroup SET_ROWS | § C.4 / [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406) |
 | FORCE device-local | `GGML_VK_MOE_CACHE_FORCE_DEVICE_LOCAL=1` |
 | Allow staging | `GGML_VK_MOE_CACHE_ALLOW_STAGING=1` |
 | Runbook lancement | [GPT-OSS_120B.md](GPT-OSS_120B.md) |

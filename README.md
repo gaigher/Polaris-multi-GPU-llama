@@ -1,4 +1,4 @@
-# 6× Polaris — Llama 3.3 70B Q4, split layer, ctx 25.6k TurboQuant-Vulkan
+# 6× Polaris — Llama 3.3 70B Q4, split layer, ctx 25.6k (TurboQuant optionnel)
 
 Runbook et scripts pour **Llama 3.3 70B Q4** sur **6 GPU AMD GCN Polaris** (Windows Vulkan), plus un correctif **optionnel** pour le cache KV TurboQuant (wave64).
 
@@ -40,7 +40,7 @@ Scénario **MoE** (placement `-ot` partiel GPU + experts CPU) sur les mêmes 6×
 
 - 6 cartes Polaris 8 Go (testé : 1× RX 570 + 5× RX 580)
 - Pilotes AMD récents, Vulkan fonctionnel sous Windows
-- Un GGUF **local** Llama 3.3 70B Instruct Q4 (ex. `Q4_K_M`, ~40 Go). Non fourni ici ; exemple : [bartowski/Llama-3.3-70B-Instruct-GGUF](https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF) (`Llama-3.3-70B-Instruct-Q4_K_M.gguf`). Respecter la [licence Llama](https://www.llama.com/llama-downloads/)
+- Un GGUF **local** Llama 3.3 70B Instruct Q4 (ex. `Q4_K_M`, ~40 Go). Non fourni ici ; exemple : [bartowski/Llama-3.3-70B-Instruct-GGUF](https://huggingface.co/bartowski/Llama-3.3-70B-Instruct-GGUF) (`Llama-3.3-70B-Instruct-Q4_K_M.gguf`). Respecter la [licence Llama 3.3](https://www.llama.com/llama3_3/license/)
 - Un `llama-server` Vulkan (voir ci-dessous)
 
 ## Obtenir `llama-server`
@@ -139,7 +139,7 @@ Sur Polaris, sans ce patch, `turbo3` provoque un `GGML_ASSERT` (subgroup 32 vs w
 
 - Patch, build et détails : [docs/TurboQuant_POLARIS.md](docs/TurboQuant_POLARIS.md)
 - Lancement avec TurboQuant : `.\scripts\lancer_70b_6gpu.ps1 -TurboQuant`
-- Contribution upstream (subgroup) : [docs/Plan Optimiser MoE.md — § C.9](docs/Plan%20Optimiser%20MoE.md#c9-pr-voisine--subgroup-set_rows-wave64)
+- Contribution upstream (subgroup) : [docs/Plan Optimiser MoE.md — § C.4](docs/Plan%20Optimiser%20MoE.md#c4-pr-voisine--subgroup-set_rows-wave64)
 
 Exemple (après patch + build TheTom) :
 

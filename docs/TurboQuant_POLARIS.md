@@ -25,7 +25,7 @@ Suivi upstream : [issue #330](https://github.com/TheTom/llama-cpp-turboquant/iss
 Depuis la **racine de ce dépôt** (déjà cloné) :
 
 ```powershell
-$CheminTheTom = Join-Path (Split-Path $PWD -Parent) "llama-cpp-turboquant"
+$CheminTheTom = Join-Path $env:USERPROFILE "Documents\llama-cpp-turboquant"
 
 git clone --branch feature/turboquant-kv-cache --depth 1 `
   https://github.com/TheTom/llama-cpp-turboquant.git `
@@ -34,7 +34,7 @@ git clone --branch feature/turboquant-kv-cache --depth 1 `
 .\scripts\appliquer_patch.ps1 -CheminDepot $CheminTheTom
 ```
 
-`appliquer_patch.ps1` applique `patches/polaris-subgroup.patch`. Sans `-CheminDepot`, le chemin par défaut est `%USERPROFILE%\Documents\llama-cpp-turboquant`.
+`appliquer_patch.ps1` applique `patches/polaris-subgroup.patch`. Sans `-CheminDepot`, même défaut : `%USERPROFILE%\Documents\llama-cpp-turboquant`.
 
 ### 3. Compiler
 
@@ -75,9 +75,12 @@ const uint32_t turbo_set_rows_subgroup =
     (device->subgroup_size_control &&
      32u >= device->subgroup_min_size && 32u <= device->subgroup_max_size)
         ? 32u : 0u;
+// TQ4_1S local_size_x=32: drop REQUIRE_FULL_SUBGROUPS when size is unpinned on wave64.
+const bool turbo_tq4_1s_full_subgroups =
+    turbo_set_rows_subgroup != 0 || device->subgroup_max_size <= 32;
 ```
 
-Remplacer le `32u` codé en dur sur les lignes SET_ROWS turbo2/3/4/tq4_1s par `turbo_set_rows_subgroup`.
+Remplacer le `32u` codé en dur sur les lignes SET_ROWS turbo2/3/4/tq4_1s par `turbo_set_rows_subgroup`. Pour `TQ4_1S`, passer aussi `turbo_tq4_1s_full_subgroups` à la place de `require_full_subgroups=true` (sinon, taille locale 32 + wave64 + full subgroups viole la spec Vulkan).
 
 Sur Polaris → `0` (pas de pin), chemin shader wave64 de la [PR #243](https://github.com/TheTom/llama-cpp-turboquant/pull/243).
 
@@ -97,7 +100,7 @@ Pour une PR upstream, extraire les hunks **séparément** depuis `patches/polari
 - `ggml-vulkan.cpp` — subgroup seul (recommandé pour la PR)
 - `CMakeLists.txt` Vulkan — CMake Windows (optionnel, commit séparé)
 
-Contexte PR subgroup : [Plan Optimiser MoE.md — § C.9](Plan%20Optimiser%20MoE.md#c9-pr-voisine--subgroup-set_rows-wave64).
+Contexte PR subgroup : [Plan Optimiser MoE.md — § C.4](Plan%20Optimiser%20MoE.md#c4-pr-voisine--subgroup-set_rows-wave64).
 
 ## Note CMake (Windows)
 
@@ -120,7 +123,7 @@ Mesures et lancement multi-GPU : [README](../README.md).
 
 ## Contribution upstream
 
-Ouvrez une PR sur **TheTom/llama-cpp-turboquant** avec le hunk subgroup de `patches/polaris-subgroup.patch` si possible. Voir [Plan Optimiser MoE.md — § C.9](Plan%20Optimiser%20MoE.md#c9-pr-voisine--subgroup-set_rows-wave64), la PR [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406) et l’issue [#330](https://github.com/TheTom/llama-cpp-turboquant/issues/330).
+Ouvrez une PR sur **TheTom/llama-cpp-turboquant** avec le hunk subgroup de `patches/polaris-subgroup.patch` si possible. Voir [Plan Optimiser MoE.md — § C.4](Plan%20Optimiser%20MoE.md#c4-pr-voisine--subgroup-set_rows-wave64), la PR [#406](https://github.com/TheTom/llama-cpp-turboquant/pull/406) et l’issue [#330](https://github.com/TheTom/llama-cpp-turboquant/issues/330).
 
 ## Références
 
