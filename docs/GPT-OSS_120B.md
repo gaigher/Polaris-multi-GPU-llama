@@ -193,7 +193,7 @@ Progression ctx (TQ, 2026-09-12) : `8192 → 16384 → 25600 → 32768` OK.
 | VRAM        | Quasi pleine sur les 6 cartes | Partielle + RAM (+ cache MoE si un jour) |
 | Placement   | Dense layer-split             | **23 experts GPU (S)** + 13 CPU          |
 | ctx typique | 25600                         | **32768** (TQ) / 8192 sans TQ            |
-| Gen typique | non benché ici (runbook charge/ctx) | ~3,94 @ 8k / ~3,53 @ 32k TQ (S, `-t 8`)  |
+| Gen typique | ~1,8 @ 8k (q8/q8, `-np 1`, 2026-11-01) | ~3,94 @ 8k / ~3,53 @ 32k TQ (S, `-t 8`)  |
 
 
 
