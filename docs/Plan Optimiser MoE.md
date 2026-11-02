@@ -185,6 +185,19 @@ Overrides utiles pour diag / force :
 | staging | **~88 GiB** H→D, sync dominante | coût principal |
 | `on` / `auto` (post-garde) | refuse staging, gen ≈ `off` | **défaut sûr** |
 
+## B.2.1 Non-régression aperture (2026-11-01)
+
+S-23, ctx 8192, `-t 8` (sauf mention). Prod inchangée : **`--moe-cache off`**.
+
+| Probe | Résultat |
+| ----- | -------- |
+| `off` | gen ~3,98 (réf.) |
+| `on` | refuse staging (`pools=0`), gen ≈ `off` |
+| `128` / `256` | cache **désactivé** (`no cacheable expert tensors`) — ne prouvent pas la frontière aperture |
+| `300` / `400` / `512` | `UMA heap=256 < need=…` → device-local + `pools=1`, `fail_alloc=0` ; gen sous `off` ; thrash garde |
+| `FORCE_DEVICE_LOCAL=1` + `512` | `device-local+staging(FORCE)`, `pools=1` |
+| `ALLOW_STAGING=1` + `on` | staging autorisé, `pools=1` |
+
 ## B.3 HOT_USES (admission / éviction)
 
 Sur Polaris 8 Go, les politiques d’admission (`admit_after`) et d’éviction « chaude » **n’ont pas battu** :
@@ -218,6 +231,7 @@ Correctness : host-mapped seulement si le tas UMA peut tenir le budget ; sinon d
 | Sujet | Statut |
 | ----- | ------ |
 | Alloc 512 MiB après détection aperture | OK |
+| Budgets `need` > 256 (300/400/512) | OK — § [B.2.1](#b21-non-régression-aperture-2026-11-01) |
 | Bench off vs 512 (~9×) | Documenté ; prod = `off` |
 | Lock queue (`vk_submit_and_wait`) | Restauré ([`45bbce5`](https://github.com/TheTom/llama-cpp-turboquant/pull/401/commits/45bbce5f1a7d68e03b180e17ffd4378a4a669d52)) |
 | Log « slow on discrete » + garde `on`/`auto` | Dans le follow-up PR |
@@ -259,8 +273,9 @@ Sur Polaris, sans correctif, `turbo3` peut assert (subgroup 32 vs wave64).
 
 ## 4. Non-régression (cache)
 
-- `off` intact ; budgets < / = / > aperture ; OOM propre.
-- `FORCE_DEVICE_LOCAL` / `ALLOW_STAGING` documentés.
+- `off` intact ; budgets `need` > aperture (300/400/512) → device-local (§ B.2.1, 2026-11-01) ; OOM propre.
+- Budgets 128/256 : cache off (trop petit pour un pool) — ≠ test aperture.
+- `FORCE_DEVICE_LOCAL` / `ALLOW_STAGING` mesurés OK.
 - Lock queue + `wave64` intacts.
 - UMA / grande aperture : validés ailleurs ou marqués non testés.
 
