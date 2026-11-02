@@ -27,6 +27,12 @@ Les commandes ci-dessous s’exécutent **depuis la racine de ce clone**.
 
 Chat API validé (`/v1/chat/completions`).
 
+**Débit indicatif** (2026-11-01, Q4_K_S, `-np 1`) :
+- ctx **8192**, KV `q8_0`/`q8_0` : prompt **~15,5 tok/s** · gen **~1,8 tok/s** (réf. débit)
+- ctx **25600**, KV `q8_0`/`turbo3` : charge OK ; smoke court OK (gen **~1,5 tok/s**, ~40 tok prompt) ; prompt plus long → **`ErrorDeviceLost`** pilote (fragile)
+
+Sans `-np 1` / sans TQ à 25.6k : OOM KV fréquent sur Vulkan0 (poids ~6,7 Go).
+
 ## Expérimental : GPT-OSS 120B
 
 Scénario **MoE** (placement `-ot` partiel GPU + experts CPU) sur les mêmes 6× Polaris — **non validé** comme le 70B.
@@ -91,7 +97,7 @@ Ou en une ligne :
 & $env:SERVEUR_LLAMA `
   -m $env:MODELE_LLAMA `
   --host 127.0.0.1 --port 8080 `
-  -c 25600 -ngl 99 -fa on `
+  -c 25600 -ngl 99 -fa on -np 1 `
   --split-mode layer `
   --device Vulkan0,Vulkan1,Vulkan2,Vulkan3,Vulkan4,Vulkan5 `
   --fit off `
@@ -103,6 +109,7 @@ Ou en une ligne :
 | Option | Valeur | Rôle |
 |--------|--------|------|
 | `-c 25600` | ctx 25.6k | Fenêtre de contexte validée |
+| `-np 1` | 1 slot | Évite `n_seq_max=4` (KV ×4) qui OOM sur Polaris 8 Go |
 | `--split-mode layer` | layer | Répartit les 80 couches + KV sur les 6 GPU |
 | `--device Vulkan0,…,Vulkan5` | 6 GPU | Tous les Polaris visibles par Vulkan |
 | `--fit off` | pas d’ajustement auto | Évite que llama.cpp réduise le ctx silencieusement |
@@ -129,7 +136,7 @@ Arrêt : **Ctrl+C** dans le terminal qui a lancé `llama-server`.
 
 ### 4. Mémoire / contexte
 
-Le poids Q4 du 70B (~40 Go) est réparti sur les 6× 8 Go ; le KV s’ajoute par GPU selon les couches hébergées. Si OOM au chargement, réduire `-c` ou vérifier qu’aucune autre app utilise la VRAM.
+Le poids Q4 du 70B (~40 Go) est réparti sur les 6× 8 Go ; le KV s’ajoute par GPU selon les couches hébergées. Vulkan0 est souvent le plus juste (~6,7 Go de poids). Si OOM au chargement : **`-np 1`**, TurboQuant, réduire `-c`, ou vérifier qu’aucune autre app utilise la VRAM.
 
 ## Optimisation optionnelle : TurboQuant
 
@@ -147,7 +154,7 @@ Exemple (après patch + build TheTom) :
 & $env:SERVEUR_LLAMA `
   -m $env:MODELE_LLAMA `
   --host 127.0.0.1 --port 8080 `
-  -c 25600 -ngl 99 -fa on `
+  -c 25600 -ngl 99 -fa on -np 1 `
   --split-mode layer `
   --device Vulkan0,Vulkan1,Vulkan2,Vulkan3,Vulkan4,Vulkan5 `
   --cache-type-k q8_0 --cache-type-v turbo3 `
@@ -155,7 +162,7 @@ Exemple (après patch + build TheTom) :
   -v --log-timestamps
 ```
 
-Mesure indicative (K `q8_0` / V `turbo3`, ctx 25.6k) :
+Mesure indicative KV (K `q8_0` / V `turbo3`, ctx 25.6k, 1 seq) :
 
 ```
 llama_kv_cache: size = 2906.25 MiB ( 25600 cells,  80 layers,  1/1 seqs), K (q8_0): 2125.00 MiB, V (turbo3):  781.25 MiB
