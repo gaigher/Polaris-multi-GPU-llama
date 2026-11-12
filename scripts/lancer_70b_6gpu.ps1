@@ -7,6 +7,12 @@ param(
     [string]$Hote = "127.0.0.1",
     [int]$Port = 8080,
     [int]$TailleCtx = 25600,
+    [int]$Batch = 2048,
+    [int]$UBatch = 512,
+    [int]$Threads = -1,
+    [int]$ThreadsBatch = -1,
+    [string]$TensorSplit = "",
+    [string]$Numa = "",
     [switch]$TurboQuant
 )
 
@@ -32,12 +38,17 @@ Write-Host ""
 $arguments = @(
     "-m", $Modele,
     "--host", $Hote, "--port", "$Port",
-    "-c", "$TailleCtx", "-ngl", "99", "-fa", "on",
+    "-c", "$TailleCtx", "-ngl", "99", "-fa", "on", "-np", "1",
     "--split-mode", "layer",
     "--device", $Peripheriques,
+    "-b", "$Batch", "-ub", "$UBatch",
     "--fit", "off",
     "-v", "--log-timestamps"
 )
+if ($Threads -gt 0) { $arguments += @("-t", "$Threads") }
+if ($ThreadsBatch -gt 0) { $arguments += @("-tb", "$ThreadsBatch") }
+if ($TensorSplit) { $arguments += @("--tensor-split", $TensorSplit) }
+if ($Numa) { $arguments += @("--numa", $Numa) }
 if ($TurboQuant) {
     $arguments += @("--cache-type-k", "q8_0", "--cache-type-v", "turbo3")
 }
@@ -47,6 +58,12 @@ $libelleCache = if ($TurboQuant) { "q8_0 / turbo3" } else { "défaut (sans Turbo
 Write-Host "Démarrage llama-server (6 GPU, ctx $TailleCtx) sur http://${Hote}:${Port}" -ForegroundColor Cyan
 Write-Host "  Modèle    : $Modele"
 Write-Host "  Devices   : $Peripheriques"
+Write-Host "  Batch     : -b $Batch -ub $UBatch"
+if ($Threads -gt 0 -or $ThreadsBatch -gt 0) {
+    Write-Host "  Threads   : -t $Threads -tb $ThreadsBatch"
+}
+if ($TensorSplit) { Write-Host "  Split     : --tensor-split $TensorSplit" }
+if ($Numa) { Write-Host "  NUMA      : --numa $Numa" }
 Write-Host "  Cache K/V : $libelleCache"
 Write-Host "  Chat HTML : http://${Hote}:${Port}/" -ForegroundColor Green
 Write-Host ""
