@@ -10,6 +10,48 @@ Setup validé : **70B multi-GPU** sur 6× 8 Go (2026-08-31).
 
 ![Plateforme 6× Polaris — Sapphire RX 580 / RX 570, risers PCIe, tour hôte](image/Plateforme.jpg)
 
+### Architecture GCN 4.0 (Polaris 20)
+
+```mermaid
+flowchart TB
+  subgraph Host["Hôte"]
+    API["API · DirectX / Vulkan / OpenCL"]
+  end
+
+  subgraph Front["Front-end GCN"]
+    CP["Graphics Command Processor"]
+    ACE["ACE · Asynchronous Compute Engines"]
+  end
+
+  subgraph Fixed["Pipeline fixe"]
+    GE["Geometry Engines"]
+    RAST["Rasterizers"]
+  end
+
+  subgraph Array["Shader Array · Polaris 20"]
+    SE["Shader Engines"]
+    CU["Compute Units<br/>RX 580 : 36 CU · 2304 SP<br/>RX 570 : 32 CU · 2048 SP"]
+    CUD["Par CU : SIMD · Scalaire · LDS · L1 16 Ko"]
+  end
+
+  subgraph Mem["Mémoire"]
+    L2["Cache L2 · 2 Mo"]
+    MC["Contrôleurs mémoire"]
+    VRAM["GDDR5 · bus 256 bits"]
+  end
+
+  API --> CP
+  API --> ACE
+  CP --> GE --> RAST
+  CP --> SE
+  ACE --> SE
+  SE --> CU
+  CU --- CUD
+  CU --> L2 --> MC --> VRAM
+```
+
+GCN Polaris = wavefront **64** (pertinent pour les patchs FA/MMQ et TurboQuant).
+
 ## Ce dépôt
 
 ```powershell
@@ -28,18 +70,64 @@ Les commandes ci-dessous s’exécutent **depuis la racine de ce clone**.
 Chat API validé (`/v1/chat/completions`).
 
 **Débit indicatif** (2026-11-01, Q4_K_S, `-np 1`) :
-- ctx **8192**, KV `q8_0`/`q8_0` : prompt **~15,5 tok/s** · gen **~1,8 tok/s** (réf. débit)
+- ctx **8192**, KV `q8_0`/`q8_0` : prompt **~15,5 tok/s** · gen **~1,8 tok/s** (réf. débit smoke)
 - ctx **25600**, KV `q8_0`/`turbo3` : charge OK ; smoke court OK (gen **~1,5 tok/s**, ~40 tok prompt) ; prompt plus long → **`ErrorDeviceLost`** pilote (fragile)
 
 Sans `-np 1` / sans TQ à 25.6k : OOM KV fréquent sur Vulkan0 (poids ~6,7 Go).
+
+**Matrice 4 builds GCN** (2026-11-02, Q4_K_S, ctx 8192, KV `q8_0`/`q8_0`, prompt_n≈1617, gen 128, 5 paires alternées) :
+
+| Build | PP moy | TG moy | ΔPP vs ref |
+| ----- | ------ | ------ | ---------- |
+| ref | 13,60 | 1,183 | — |
+| fa (LDS) | 13,55 | 1,189 | −0,4 % |
+| **mmq** | **15,51** | 1,200 | **+14,0 %** |
+| both (FA+MMQ) | 15,33 | 1,160 | +12,7 % |
+
+**Verdict :** retenir **`builds/mmq`** (`gcn-mmq-proprietary`). FA seul neutre/négatif sur Llama 70B ; A+B n’ajoute rien. VRAM inchangée.  
+Détail : `bench_results/polaris-llama70-20261102-195848.summary.md` (premier banc MMQ seul : `…184312.summary.md`).
+
+Pour reproduire : `scripts/benchmark_polaris.ps1` (warm-up, ≥5 runs, CSV, session unique).
+
+## Prochaines optimisations (PP / TG / VRAM)
+
+Au-delà de TurboQuant et MoE : viser **les trois axes à la fois** (préremplissage, génération, VRAM). Une optimisation peut en améliorer un et dégrader les deux autres.
+
+| Priorité | Expérience | Statut |
+| -------- | ---------- | ------ |
+| 1 | Patch Vulkan GCN (4 builds) | **Fait** — MMQ retenu |
+| 2 | `-b` / `-ub` sur binaire MMQ | **Fait** — retenir `-b 1024 -ub 256` (PP +1,7 % vs 2048:512) ; détail `bench_results/polaris-llama70-20261112-115638.summary.md` |
+| 3 | `--tensor-split` (proportions layer, pas TP) | à faire |
+| 4 | Ordre PCIe / NUMA des GPU | à faire |
+| 5 | NUMA / affinité CPU (GPT-OSS) | à faire |
+| 6 | Quants GGUF | à faire |
+| 7 | Décodage spéculatif | à faire |
+| 8 | Fréquences mémoire GPU | à faire |
+
+Roadmap : **[Plan Optimiser PP-TG-VRAM.md](Plan%20Optimiser%20PP-TG-VRAM.md)** · source externe : [doteyeso-ops/rx580-vulkan-fa-lds](https://github.com/doteyeso-ops/rx580-vulkan-fa-lds)
+
+```powershell
+# Binaire MMQ retenu
+$mmq = ".\builds\mmq\llama-server.exe"
+
+# Lancement retenu (MMQ + batch)
+.\scripts\lancer_70b_6gpu.ps1 -ServeurLlama $mmq -Batch 1024 -UBatch 256
+
+# Reproduire le balayage batch
+.\scripts\benchmark_polaris.ps1 -ServeurLlama $mmq `
+  -BatchVariants "1024:256,2048:256,2048:512,4096:512,4096:1024" `
+  -CtxList 8192 -PromptTokens 2048 -Runs 5
+```
+
+`lancer_70b_6gpu.ps1` expose aussi `-Batch`, `-UBatch`, `-Threads`, `-ThreadsBatch`, `-TensorSplit`, `-Numa`.
 
 ## Expérimental : GPT-OSS 120B
 
 Scénario **MoE** (placement `-ot` partiel GPU + experts CPU) sur les mêmes 6× Polaris — **non validé** comme le 70B.
 
 - Réf. expérimentale : **S-23** + `-t 8` + **`--moe-cache off`** (Polaris 8 Go : `512` alloue après patch mais ~9× plus lent)
-- Runbook : [docs/GPT-OSS_120B.md](docs/GPT-OSS_120B.md)
-- Optimisations MoE + PR cache Vulkan : [docs/Plan Optimiser MoE.md](docs/Plan%20Optimiser%20MoE.md) → upstream [PR #401](https://github.com/TheTom/llama-cpp-turboquant/pull/401)
+- Runbook : [docs/GPT-OSS_120B.md](GPT-OSS_120B.md)
+- Optimisations MoE + PR cache Vulkan : [docs/Plan Optimiser MoE.md](Plan%20Optimiser%20MoE.md) → upstream [PR #401](https://github.com/TheTom/llama-cpp-turboquant/pull/401)
 - Placement incrémental : `scripts/placer_experts_incremental.ps1` (**expérimental**, sans `-MoeCache` en prod)
 
 ## Prérequis
@@ -114,6 +202,8 @@ Ou en une ligne :
 | `--device Vulkan0,…,Vulkan5` | 6 GPU | Tous les Polaris visibles par Vulkan |
 | `--fit off` | pas d’ajustement auto | Évite que llama.cpp réduise le ctx silencieusement |
 | `-ngl 99` | toutes les couches GPU | Indispensable pour le 70B |
+| `-b` / `-ub` | 2048 / 512 (défaut script) | Batch logique / physique — impact PP et VRAM temporaire |
+| `--tensor-split` | optionnel | Proportions de couches entre GPU (toujours en mode `layer`) |
 
 ### 3. Chat HTML et vérification
 
@@ -144,9 +234,9 @@ Pour gagner de la VRAM sur le cache KV (`turbo3`), un patch Polaris (wave64) et 
 
 Sur Polaris, sans ce patch, `turbo3` provoque un `GGML_ASSERT` (subgroup 32 vs wave64).
 
-- Patch, build et détails : [docs/TurboQuant_POLARIS.md](docs/TurboQuant_POLARIS.md)
+- Patch, build et détails : [docs/TurboQuant_POLARIS.md](TurboQuant_POLARIS.md)
 - Lancement avec TurboQuant : `.\scripts\lancer_70b_6gpu.ps1 -TurboQuant`
-- Contribution upstream (subgroup) : [docs/Plan Optimiser MoE.md — § C.4](docs/Plan%20Optimiser%20MoE.md#c4-pr-voisine--subgroup-set_rows-wave64)
+- Contribution upstream (subgroup) : [Plan Optimiser MoE.md — § C.4](Plan%20Optimiser%20MoE.md#c4-pr-voisine--subgroup-set_rows-wave64)
 
 Exemple (après patch + build TheTom) :
 
